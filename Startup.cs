@@ -1,3 +1,7 @@
+using DataAccess.Repositories;
+using Domain.Models;
+using Domain.Repositories;
+using library.DatabaseInitialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -7,8 +11,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -29,6 +35,9 @@ namespace library
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            string connectionString = Configuration["SQLiteConnectionString"];
+            Tables.CreateBooksTable(connectionString);
 
             services.AddAuthentication(options =>
             {
@@ -70,6 +79,10 @@ namespace library
                         }
                     };
                 });
+
+            services.AddLogging(configure => configure.AddDebug());
+
+            services.AddSingleton<IRepository<Book>>(s => new BookRepository(connectionString, s.GetRequiredService<ILogger<BookRepository>>()));
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>

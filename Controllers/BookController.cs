@@ -3,45 +3,73 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Models;
+using Domain.Repositories;
+using library.PostDTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace library.Controllers
 {
     public class BookController : Controller
     {
-        [HttpGet("api/[controller]")]
-        public IActionResult Index()
+        private readonly IRepository<Book> _repository;
+        public BookController(IRepository<Book> repository)
         {
-            // Get all books
-            return View();
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        }
+
+        [HttpGet("api/[controller]")]
+        public async Task<JsonResult> Index()
+        {
+            IReadOnlyCollection<Book> books = await _repository.Get();
+            if (books.Any())
+            {
+                return Json(books);
+            }
+            HttpContext.Response.StatusCode = 404;
+            return Json(new Book[] { });
         }
 
         [HttpGet("api/[controller]/{id}")]
-        public IActionResult Index(string id)
+        public async Task<JsonResult> Index(int id)
         {
-            // Get book by id
-            return View();
+            Book book = await _repository.Get(id);
+            if (book is object)
+            {
+                return Json(book);
+            }
+            HttpContext.Response.StatusCode = 404;
+            return Json(null);
         }
 
         [HttpPut("api/[controller]/{id}")]
-        public IActionResult Index(string id, Book book)
+        public async Task<JsonResult> Index(int id, [FromBody]BookDTO bookDto)
         {
-            //Update book
-            return View();
+            var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
+            Book updatedBook = await _repository.Update(id, book);
+            if (book is object)
+            {
+                return Json(updatedBook);
+            }
+            HttpContext.Response.StatusCode = 404;
+            return Json(null);
         }
 
         [HttpPost("api/[controller]")]
-        public IActionResult Index(Book book)
+        public async Task<JsonResult> Index([FromBody]BookDTO bookDto)
         {
-            //Create new book
-            return View();
+            var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
+            book.SetCreatedBy(User?.Identity?.Name ?? "Anonymous");
+            
+            Book newBook = await _repository.Create(book);
+            HttpContext.Response.StatusCode = 201;
+            return Json(newBook);
         }
 
         [HttpDelete("api/[controller]/{id}")]
-        public IActionResult Delete(string id)
+        public async Task<JsonResult> Delete(int id)
         {
-            //Create new book
-            return View();
+            bool deleted = await  _repository.Delete(id);
+            return Json(new { deleted });
         }
     }
 }
