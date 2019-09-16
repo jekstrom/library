@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Domain.Models;
 using Domain.Repositories;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace library.Controllers
 {
+    // TODO: Authorization attribute filter
     public class BookController : Controller
     {
         private readonly IRepository<Book> _repository;
@@ -20,56 +22,86 @@ namespace library.Controllers
         [HttpGet("api/[controller]")]
         public async Task<JsonResult> Index()
         {
-            IReadOnlyCollection<Book> books = await _repository.Get();
-            if (books.Any())
+            if (UserIsAuthorized("bookreader"))
             {
-                return Json(books);
+                IReadOnlyCollection<Book> books = await _repository.Get();
+                if (books.Any())
+                {
+                    return Json(books);
+                }
+                HttpContext.Response.StatusCode = 404;
+                return Json(new Book[] { });
             }
-            HttpContext.Response.StatusCode = 404;
-            return Json(new Book[] { });
+            HttpContext.Response.StatusCode = 403;
+            return Json(null);
         }
 
         [HttpGet("api/[controller]/{id}")]
         public async Task<JsonResult> Index(int id)
         {
-            Book book = await _repository.Get(id);
-            if (book is object)
+            if (UserIsAuthorized("bookreader"))
             {
-                return Json(book);
+                Book book = await _repository.Get(id);
+                if (book is object)
+                {
+                    return Json(book);
+                }
+                HttpContext.Response.StatusCode = 404;
+                return Json(null);
             }
-            HttpContext.Response.StatusCode = 404;
+            HttpContext.Response.StatusCode = 403;
             return Json(null);
         }
 
         [HttpPut("api/[controller]/{id}")]
         public async Task<JsonResult> Index(int id, [FromBody]BookDTO bookDto)
         {
-            var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
-            Book updatedBook = await _repository.Update(id, book);
-            if (book is object)
+            if (UserIsAuthorized("bookwriter"))
             {
-                return Json(updatedBook);
+                var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
+                Book updatedBook = await _repository.Update(id, book);
+                if (book is object)
+                {
+                    return Json(updatedBook);
+                }
+                HttpContext.Response.StatusCode = 404;
+                return Json(null);
             }
-            HttpContext.Response.StatusCode = 404;
+            HttpContext.Response.StatusCode = 403;
             return Json(null);
         }
 
         [HttpPost("api/[controller]")]
         public async Task<JsonResult> Index([FromBody]BookDTO bookDto)
         {
-            var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
-            book.SetCreatedBy(User?.Identity?.Name ?? "Anonymous");
-            
-            Book newBook = await _repository.Create(book);
-            HttpContext.Response.StatusCode = 201;
-            return Json(newBook);
+            if (UserIsAuthorized("bookwriter"))
+            {
+                var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
+                book.SetCreatedBy(User?.Identity?.Name ?? "Anonymous");
+
+                Book newBook = await _repository.Create(book);
+                HttpContext.Response.StatusCode = 201;
+                return Json(newBook);
+            }
+            HttpContext.Response.StatusCode = 403;
+            return Json(null);
         }
 
         [HttpDelete("api/[controller]/{id}")]
         public async Task<JsonResult> Delete(int id)
         {
-            bool deleted = await  _repository.Delete(id);
-            return Json(new { deleted });
+            if (UserIsAuthorized("bookwriter"))
+            {
+                bool deleted = await _repository.Delete(id);
+                return Json(new { deleted });
+            }
+            HttpContext.Response.StatusCode = 403;
+            return Json(null);
+        }
+
+        private bool UserIsAuthorized(string action)
+        {
+            return User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "superadmin" || c.Value == action));
         }
     }
 }

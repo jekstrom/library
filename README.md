@@ -21,3 +21,11 @@
 * BookCheckedIn
 * BookCheckedOut
 
+### TODO
+* Add users table with roles
+* Add authorization
+* Generate nav based on current user's authorization
+* Add book management pages
+* Add book report page
+* State changes
+* Unit tests

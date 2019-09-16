@@ -1,10 +1,12 @@
 using DataAccess.Repositories;
 using Domain.Models;
 using Domain.Repositories;
+using library.Configuration;
 using library.DatabaseInitialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +18,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -38,6 +42,7 @@ namespace library
 
             string connectionString = Configuration["SQLiteConnectionString"];
             Tables.CreateBooksTable(connectionString);
+            Tables.CreateUsersTable(connectionString);
 
             services.AddAuthentication(options =>
             {
@@ -83,6 +88,11 @@ namespace library
             services.AddLogging(configure => configure.AddDebug());
 
             services.AddSingleton<IRepository<Book>>(s => new BookRepository(connectionString, s.GetRequiredService<ILogger<BookRepository>>()));
+
+            List<UserRoleMap> userRoleMap = new List<UserRoleMap>();
+            Configuration.GetSection("UserRoleMap").Bind(userRoleMap);
+
+            services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(connectionString, userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
