@@ -5,13 +5,12 @@ import { Home } from './components/Home';
 import { FetchData } from './components/FetchData';
 import { Books } from './components/Books';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faHome, faBook } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBook, faEdit } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faHome, faBook);
+library.add(faHome, faBook, faEdit);
 
 export default class App extends Component {
   displayName = App.name;
-  
 
   render() {
     return (
