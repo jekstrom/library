@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Button } from 'react-bootstrap';
 import { BookModal } from "./BookModal"
 import { EditBookModal } from './EditBookModal';
 
@@ -10,6 +12,7 @@ export class Books extends Component {
     this.state = { books: [], loading: true };
     this.addNewBook = this.addNewBook.bind(this);
     this.onUpdatedBook = this.onUpdatedBook.bind(this);
+    this.deleteBook = this.deleteBook.bind(this);
 
     fetch('api/Book')
       .then(response => response.json())
@@ -29,6 +32,7 @@ export class Books extends Component {
             <th>ISBN</th>
             <th>Description</th>
             <th>Checked Out</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -40,6 +44,7 @@ export class Books extends Component {
               <td>{book.isbn}</td>
               <td>{book.description}</td>
               <td>{book.checkedOut ? 'yes' : 'no'}</td>
+              <td><Button variant='warning' onClick={this.deleteBook(book.id)}><FontAwesomeIcon icon='trash' /> Delete</Button></td>
             </tr>
           )}
         </tbody>
@@ -68,6 +73,20 @@ export class Books extends Component {
       checkedOut: data.checkedOut
     }
     this.setState({books: this.state.books.filter(b => b.id !== data.id).concat([updatedBook])})
+  }
+
+  deleteBook(id) {
+    var self = this;
+    return function(e) {
+      e.preventDefault();
+      fetch('/api/book/' + id, {
+        method: 'DELETE'
+      }).then(response => {
+        if (response) {
+          self.setState({books: self.state.books.filter(b => b.id !== id)})
+        }
+      });
+    }
   }
 
   render() {

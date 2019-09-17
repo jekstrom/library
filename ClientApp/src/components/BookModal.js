@@ -1,4 +1,4 @@
-  import React, { Component } from 'react';
+import React, { Component } from 'react';
 import { Button, Modal, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
 
 export class BookModal extends Component {
