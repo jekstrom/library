@@ -22,10 +22,8 @@
 * BookCheckedOut
 
 ### TODO
-* Add users table with roles
-* Add authorization
-* Generate nav based on current user's authorization
 * Add book management pages
 * Add book report page
 * State changes
+* Generate nav based on current user's authorization
 * Unit tests
