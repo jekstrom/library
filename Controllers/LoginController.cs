@@ -38,7 +38,10 @@ namespace library.Controllers
                     User.FindFirst(c => c.Type == "urn:github:avatar")?.Value,
                     username,
                     name,
-                    User.FindFirst(c => c.Type == "urn:github:url")?.Value
+                    User.FindFirst(c => c.Type == "urn:github:url")?.Value,
+                    canEdit: UserCanEdit(),
+                    canDelete: UserCanDelete(),
+                    canCheckOut: UserCanCheckOut()
                 ));
             }
 
@@ -51,6 +54,21 @@ namespace library.Controllers
 
             // Update role claims on current user
             User.AddIdentity(new ClaimsIdentity(newLibraryUser.Roles.Select(r => new Claim(ClaimTypes.Role, r)).ToList()));
+        }
+
+        private bool UserCanEdit()
+        {
+            return User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "superadmin" || c.Value == "bookwriter"));
+        }
+
+        private bool UserCanDelete ()
+        {
+            return User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "superadmin" || c.Value == "bookwriter"));
+        }
+
+        private bool UserCanCheckOut()
+        {
+            return User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "superadmin" || c.Value == "bookwriter" || c.Value == "bookchecker"));
         }
     }
 }

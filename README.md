@@ -22,7 +22,7 @@
 * BookCheckedOut
 
 ### TODO
-* Add book management pages
+* Track which user has which book checked out
 * Add book report page
 * State changes
 * Generate nav based on current user's authorization

@@ -58,7 +58,8 @@ namespace library.Controllers
         {
             if (UserIsAuthorized("bookwriter"))
             {
-                var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);
+                var book = new Book(0, bookDto.Title, bookDto.Author, bookDto.ISBN, bookDto.Description);                
+
                 Book updatedBook = await _repository.Update(id, book);
                 if (book is object)
                 {
@@ -82,6 +83,29 @@ namespace library.Controllers
                 Book newBook = await _repository.Create(book);
                 HttpContext.Response.StatusCode = 201;
                 return Json(newBook);
+            }
+            HttpContext.Response.StatusCode = 403;
+            return Json(null);
+        }
+
+        [HttpPost("api/[controller]/{id}/[action]")]
+        public async Task<JsonResult> Checkout(int id)
+        {
+            if (UserIsAuthorized("bookchecker"))
+            {
+                // TODO: Move logic to domain layer
+                var existingBook = await _repository.Get(id);
+                if (!existingBook.CheckedOut)
+                {
+                    existingBook.CheckOut();
+                }
+                else
+                {
+                    HttpContext.Response.StatusCode = 400;
+                    return Json(null);
+                }
+                Book checkedOutBook = await _repository.Update(id, existingBook);
+                return Json(checkedOutBook);
             }
             HttpContext.Response.StatusCode = 403;
             return Json(null);

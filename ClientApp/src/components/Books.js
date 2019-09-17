@@ -9,10 +9,17 @@ export class Books extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { books: [], loading: true };
+    this.state = { books: [], userdata: [], loading: true };
     this.addNewBook = this.addNewBook.bind(this);
     this.onUpdatedBook = this.onUpdatedBook.bind(this);
     this.deleteBook = this.deleteBook.bind(this);
+    this.checkoutBook = this.checkoutBook.bind(this);
+
+    fetch('api/Login/GetGithubUserData')
+    .then(response => response.json())
+    .then(data => {
+      this.setState({ userdata: data, loading: false });
+    });
 
     fetch('api/Book')
       .then(response => response.json())
@@ -26,25 +33,25 @@ export class Books extends Component {
       <table className='table'>
         <thead>
           <tr>
-            <th></th>
+            {this.state.userdata.canEdit ? <th></th> : null}
             <th>Title</th>
             <th>Author</th>
             <th>ISBN</th>
             <th>Description</th>
             <th>Checked Out</th>
-            <th></th>
+            {this.state.userdata.canEdit ? <th></th> : null}
           </tr>
         </thead>
         <tbody>
           {books.map(book =>
             <tr key={book.title}>
-              <td><EditBookModal book={book} onUpdatedBook={this.onUpdatedBook}/></td>
+              {this.state.userdata.canEdit ? <td><EditBookModal book={book} onUpdatedBook={this.onUpdatedBook}/></td> : null}
               <td>{book.title}</td>
               <td>{book.author}</td>
               <td>{book.isbn}</td>
               <td>{book.description}</td>
-              <td>{book.checkedOut ? 'yes' : 'no'}</td>
-              <td><Button variant='warning' onClick={this.deleteBook(book.id)}><FontAwesomeIcon icon='trash' /> Delete</Button></td>
+              <td>{book.checkedOut ? 'yes' : this.state.userdata.canCheckOut ? <Button variant="info" onClick={this.checkoutBook(book.id)}>Check Out</Button> : null} </td>
+              {this.state.userdata.canDelete ? <td><Button variant='warning' onClick={this.deleteBook(book.id)}><FontAwesomeIcon icon='trash' /> Delete</Button></td> : null}
             </tr>
           )}
         </tbody>
@@ -84,6 +91,22 @@ export class Books extends Component {
       }).then(response => {
         if (response) {
           self.setState({books: self.state.books.filter(b => b.id !== id)})
+        }
+      });
+    }
+  }
+
+  checkoutBook(id) {
+    var self = this;
+    return function(e) {
+      e.preventDefault();
+      fetch('/api/book/' + id + '/checkout', {
+        method: 'POST'
+      }).then(response => {
+        if (response) {
+          var checkedOutBook = self.state.books.find(b => b.id === id);
+          checkedOutBook.checkedOut = true;
+          self.setState({books: self.state.books.filter(b => b.id !== id).concat([checkedOutBook])})
         }
       });
     }

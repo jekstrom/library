@@ -119,7 +119,7 @@ export class EditBookModal extends Component {
             <FormGroup controlId="bookFormDescription">
               <ControlLabel>Description</ControlLabel>
               <FormControl
-                type="textarea"
+                componentClass="textarea"
                 value={this.state.description}
                 placeholder="Book Description"
                 onChange={this.handleChange("description")}
