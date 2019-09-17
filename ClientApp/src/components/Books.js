@@ -31,10 +31,11 @@ export class Books extends Component {
         <tbody>
           {books.map(book =>
             <tr key={book.title}>
+              <td>{book.title}</td>
               <td>{book.author}</td>
               <td>{book.isbn}</td>
               <td>{book.description}</td>
-              <td>{!book.checkedIn}</td>
+              <td>{book.checkedOut ? 'yes' : 'no'}</td>
             </tr>
           )}
         </tbody>
@@ -48,7 +49,7 @@ export class Books extends Component {
       author: data.author,
       isbn: data.isbn,
       description: data.description,
-      checkedIn: !data.checkedOut
+      checkedOut: data.checkedOut
     }
     this.setState({books: this.state.books.concat([newBook])})
   }

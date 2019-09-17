@@ -6,6 +6,6 @@
         public string Author { get; set; }
         public string ISBN { get; set; }
         public string Description { get; set; }
-        public bool CheckedIn { get; set; }
+        public bool CheckedOut { get; set; }
     }
 }

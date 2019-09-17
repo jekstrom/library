@@ -30,7 +30,7 @@ export class BookModal extends Component {
         Author: this.state.author,
         ISBN: this.state.isbn,
         Description: this.state.description,
-        CheckedIn: false
+        CheckedOut: false
       }),
       headers: {
         'Content-Type': 'application/json'

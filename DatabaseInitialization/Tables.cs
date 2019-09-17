@@ -16,7 +16,7 @@ namespace library.DatabaseInitialization
     book_author TEXT, 
     book_isbn TEXT, 
     book_description TEXT,
-    book_checkedIn INTEGER,
+    book_checkedOut INTEGER,
     book_created TEXT,
     book_updated TEXT,
     book_createdBy TEXT
