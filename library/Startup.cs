@@ -126,7 +126,6 @@ namespace library
             else
             {
                 app.UseExceptionHandler("/Error");
-                app.UseHsts();
             }
 
             app.UseStaticFiles();
