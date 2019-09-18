@@ -101,9 +101,8 @@ namespace library
             services.AddTransient<IDbConnection>(s => new SqliteConnection(connectionString));
 
             services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(s.GetRequiredService<IDbConnection>(), userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
-
             services.AddSingleton<IRepository<Book>>(s => new BookRepository(s.GetRequiredService<IDbConnection>(), s.GetRequiredService<ILogger<BookRepository>>()));
-            services.AddSingleton<IUserBookRepository>(s => new UserBookRepository(connectionString, s.GetRequiredService<ILogger<UserBookRepository>>()));
+            services.AddSingleton<IUserBookRepository>(s => new UserBookRepository(s.GetRequiredService<IDbConnection>(), s.GetRequiredService<ILogger<UserBookRepository>>()));
 
             services.AddSingleton<IUserBookService>(s => new UserBookService(s.GetRequiredService<IUserBookRepository>(), s.GetRequiredService<IRepository<Book>>()));
 

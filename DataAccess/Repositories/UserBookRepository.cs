@@ -3,20 +3,19 @@ using Domain.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace DataAccess.Repositories
 {
     public class UserBookRepository : IUserBookRepository
     {
-        private readonly string _connectionString;
+        private readonly IDbConnection _connection;
         private readonly ILogger<UserBookRepository> _logger;
 
-        public UserBookRepository(string connectionString, ILogger<UserBookRepository> logger)
+        public UserBookRepository(IDbConnection connection, ILogger<UserBookRepository> logger)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -24,11 +23,12 @@ namespace DataAccess.Repositories
         {
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"INSERT INTO userbooks (
+                    using (var com = _connection.CreateCommand())
+                    {
+                        com.CommandText = @"INSERT INTO userbooks (
                             user_id,
                             book_id
                           )
@@ -39,12 +39,12 @@ namespace DataAccess.Repositories
                           WHERE user_username = @username;
                           UPDATE books
                             SET book_checkedOut = 1
-                          WHERE book_id = @bookId;", db))
-                    {
+                          WHERE book_id = @bookId;";
+
                         com.Parameters.Add(new SqliteParameter("username", book.CheckedOutBy));
                         com.Parameters.Add(new SqliteParameter("bookId", book.Id));
 
-                        await com.ExecuteNonQueryAsync();
+                        com.ExecuteNonQuery();
                     }
                     db.Close();
                 }
@@ -59,11 +59,12 @@ namespace DataAccess.Repositories
         {
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"DELETE
+                    using (var com = _connection.CreateCommand())
+                    {
+                        com.CommandText = @"DELETE
                           FROM userbooks 
                           WHERE user_id IN (
                             SELECT user_id
@@ -73,12 +74,12 @@ namespace DataAccess.Repositories
                           AND book_id = @bookId;
                           UPDATE books
                             SET book_checkedOut = 0
-                          WHERE book_id = @bookId;", db))
-                    {
+                          WHERE book_id = @bookId;";
+
                         com.Parameters.Add(new SqliteParameter("username", book.CheckedOutBy));
                         com.Parameters.Add(new SqliteParameter("bookId", book.Id));
 
-                        await com.ExecuteNonQueryAsync();
+                        com.ExecuteNonQuery();
                     }
                     db.Close();
                 }
