@@ -19,6 +19,8 @@
   * Run `dotnet library.dll` in the publish output directory for a production version
 * Navigate to `http://localhost:<port>` or `https://localhost:<secure port>`
 
+There is currently a version running at https://jamesekstrom.com/library/
+
 ## Architecture
 
 ### Models
