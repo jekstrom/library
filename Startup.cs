@@ -1,6 +1,7 @@
 using DataAccess.Repositories;
 using Domain.Models;
 using Domain.Repositories;
+using Domain.Services;
 using library.Configuration;
 using library.DatabaseInitialization;
 using Microsoft.AspNetCore.Authentication;
@@ -44,6 +45,9 @@ namespace library
             Tables.CreateBooksTable(connectionString);
             Tables.CreateUsersTable(connectionString);
 
+            List<UserRoleMap> userRoleMap = new List<UserRoleMap>();
+            Configuration.GetSection("UserRoleMap").Bind(userRoleMap);
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -81,18 +85,27 @@ namespace library
                             var user = JObject.Parse(await response.Content.ReadAsStringAsync());
 
                             context.RunClaimActions(user);
+
+                            string username = context.Principal.Claims.FirstOrDefault(c => c.Type == "urn:github:login").Value;
+                            UserRoleMap roles = userRoleMap.FirstOrDefault(u => u.Username.Equals(username));
+
+                            if (roles != null)
+                            {
+                                // Update role claims on current user
+                                context.Principal.AddIdentity(new ClaimsIdentity(roles.Roles.Select(r => new Claim(ClaimTypes.Role, r)).ToList()));
+                            }
                         }
                     };
                 });
 
             services.AddLogging(configure => configure.AddDebug());
 
-            services.AddSingleton<IRepository<Book>>(s => new BookRepository(connectionString, s.GetRequiredService<ILogger<BookRepository>>()));
-
-            List<UserRoleMap> userRoleMap = new List<UserRoleMap>();
-            Configuration.GetSection("UserRoleMap").Bind(userRoleMap);
-
             services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(connectionString, userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
+
+            services.AddSingleton<IRepository<Book>>(s => new BookRepository(connectionString, s.GetRequiredService<ILogger<BookRepository>>()));
+            services.AddSingleton<IUserBookRepository>(s => new UserBookRepository(connectionString, s.GetRequiredService<ILogger<UserBookRepository>>()));
+
+            services.AddSingleton<IUserBookService>(s => new UserBookService(s.GetRequiredService<IUserBookRepository>(), s.GetRequiredService<IRepository<Book>>()));
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>

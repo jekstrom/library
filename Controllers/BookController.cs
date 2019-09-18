@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Domain.Models;
 using Domain.Repositories;
+using Domain.Services;
 using library.PostDTOs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,9 +15,12 @@ namespace library.Controllers
     public class BookController : Controller
     {
         private readonly IRepository<Book> _repository;
-        public BookController(IRepository<Book> repository)
+        private readonly IUserBookService _userBookService;
+
+        public BookController(IRepository<Book> repository, IUserBookService userBookService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _userBookService = userBookService ?? throw new ArgumentNullException(nameof(userBookService));
         }
 
         [HttpGet("api/[controller]")]
@@ -93,19 +97,39 @@ namespace library.Controllers
         {
             if (UserIsAuthorized("bookchecker"))
             {
-                // TODO: Move logic to domain layer
-                var existingBook = await _repository.Get(id);
-                if (!existingBook.CheckedOut)
+                try
                 {
-                    existingBook.CheckOut();
+                    Book book = await _userBookService.CheckoutBook(GetUsername(), id);
+
+                    return Json(book);
                 }
-                else
+                catch
+                {
+                    // TODO: Add better error response messages
+                    HttpContext.Response.StatusCode = 400;
+                    return Json(null);
+                }
+            }
+            HttpContext.Response.StatusCode = 403;
+            return Json(null);
+        }
+
+        [HttpPost("api/[controller]/{id}/[action]")]
+        public async Task<JsonResult> Checkin(int id)
+        {
+            if (UserIsAuthorized("bookchecker"))
+            {
+                try
+                {
+                    Book book = await _userBookService.CheckinBook(GetUsername(), id);
+
+                    return Json(book);
+                } 
+                catch
                 {
                     HttpContext.Response.StatusCode = 400;
                     return Json(null);
                 }
-                Book checkedOutBook = await _repository.Update(id, existingBook);
-                return Json(checkedOutBook);
             }
             HttpContext.Response.StatusCode = 403;
             return Json(null);
@@ -126,6 +150,11 @@ namespace library.Controllers
         private bool UserIsAuthorized(string action)
         {
             return User.Claims.Any(c => c.Type == ClaimTypes.Role && (c.Value == "superadmin" || c.Value == action));
+        }
+
+        private string GetUsername()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == "urn:github:login").Value;
         }
     }
 }

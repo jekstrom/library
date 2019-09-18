@@ -32,28 +32,31 @@ namespace library.Controllers
             {
                 string name = User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value;
                 string username = User.FindFirst(c => c.Type == "urn:github:login")?.Value;
-                await PersistUser(new LibraryUser(name, username));
+                var user = await PersistUser(new LibraryUser(0, name, username, new Book[] { }));
 
-                return Json(new GithubUser(
-                    User.FindFirst(c => c.Type == "urn:github:avatar")?.Value,
-                    username,
-                    name,
-                    User.FindFirst(c => c.Type == "urn:github:url")?.Value,
-                    canEdit: UserCanEdit(),
-                    canDelete: UserCanDelete(),
-                    canCheckOut: UserCanCheckOut()
-                ));
+                return Json(user);
             }
 
             return Json(new { });
         }
 
-        private async Task PersistUser(LibraryUser libraryUser)
+        private async Task<GithubUser> PersistUser(LibraryUser libraryUser)
         {
             LibraryUser newLibraryUser = await _repository.Get(libraryUser.Username) ?? await _repository.Create(libraryUser);
 
             // Update role claims on current user
             User.AddIdentity(new ClaimsIdentity(newLibraryUser.Roles.Select(r => new Claim(ClaimTypes.Role, r)).ToList()));
+
+            return new GithubUser(
+                User.FindFirst(c => c.Type == "urn:github:avatar")?.Value,
+                libraryUser.Username,
+                libraryUser.Name,
+                User.FindFirst(c => c.Type == "urn:github:url")?.Value,
+                canEdit: UserCanEdit(),
+                canDelete: UserCanDelete(),
+                canCheckOut: UserCanCheckOut(),
+                newLibraryUser.BooksCheckedOut
+            );
         }
 
         private bool UserCanEdit()

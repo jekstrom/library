@@ -23,6 +23,7 @@
 
 ### TODO
 * Track which user has which book checked out
+* Test login with multiple different accounts
 * Add book report page
 * State changes
 * Generate nav based on current user's authorization
