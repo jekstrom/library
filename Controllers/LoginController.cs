@@ -37,7 +37,21 @@ namespace library.Controllers
                 return Json(user);
             }
 
-            return Json(new { });
+            return Json(GetUnAuthenticatedUser());
+        }
+
+        private GithubUser GetUnAuthenticatedUser()
+        {
+            return new GithubUser(
+                User.FindFirst(c => c.Type == "urn:github:avatar")?.Value,
+                User.FindFirst(c => c.Type == "urn:github:login")?.Value,
+                User.FindFirst(c => c.Type == ClaimTypes.Name)?.Value,
+                User.FindFirst(c => c.Type == "urn:github:url")?.Value,
+                canEdit: UserCanEdit(),
+                canDelete: UserCanDelete(),
+                canCheckOut: UserCanCheckOut(),
+                new Book[] { }
+            );
         }
 
         private async Task<GithubUser> PersistUser(LibraryUser libraryUser)

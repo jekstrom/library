@@ -39,10 +39,24 @@ namespace library.DatabaseInitialization
                         role_value TEXT
                     );
                     INSERT INTO roles (role_value)
-                    VALUES 
-                        ('superadmin'),
-                        ('bookreader'),
-                        ('bookwriter');", db))
+                    SELECT 'superadmin'
+                    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_value = 'superadmin');
+
+                    INSERT INTO roles (role_value)
+                    SELECT 'bookreader'
+                    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_value = 'bookreader');
+
+                    INSERT INTO roles (role_value)
+                    SELECT 'bookwriter'
+                    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_value = 'bookwriter');
+
+                    INSERT INTO roles (role_value)
+                    SELECT 'bookchecker'
+                    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_value = 'bookchecker');
+
+                    INSERT INTO roles (role_value)
+                    SELECT 'guest'
+                    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_value = 'guest');", db))
                 {
                     com.ExecuteNonQuery();
 

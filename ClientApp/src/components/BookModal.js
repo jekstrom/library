@@ -35,8 +35,11 @@ export class BookModal extends Component {
       headers: {
         'Content-Type': 'application/json'
       }
-    }).then(response => {
-      response.json().then(d => this.props.onNewBook(d)); 
+    }).then(response => response.json())
+    .then(data => {
+      if (data) {
+        this.props.onNewBook(data); 
+      }
       this.setState({show: false})
     });
   }
