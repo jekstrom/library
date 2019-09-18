@@ -92,6 +92,7 @@ export class Books extends Component {
 
   onUpdatedBook(data) {
     var updatedBook = {
+      id: data.id,
       title: data.title,
       author: data.author,
       isbn: data.isbn,
