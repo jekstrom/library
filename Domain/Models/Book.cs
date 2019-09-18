@@ -82,5 +82,21 @@ namespace Domain.Models
             CheckedOut = false;
             return this;
         }
+
+        public override bool Equals(object obj)
+        {
+            Book other = obj as Book;
+            return other != null
+                && other.Author == Author
+                && other.CheckedOut == CheckedOut
+                && other.CheckedOutBy == CheckedOutBy
+                && other.Created == Created
+                && other.CreatedBy == CreatedBy
+                && other.Description == Description
+                && other.Id == Id
+                && other.ISBN == ISBN
+                && other.Title == Title
+                && other.Updated == Updated;
+        }
     }
 }

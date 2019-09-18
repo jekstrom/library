@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -102,7 +103,9 @@ namespace library
 
             services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(connectionString, userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
 
-            services.AddSingleton<IRepository<Book>>(s => new BookRepository(connectionString, s.GetRequiredService<ILogger<BookRepository>>()));
+            services.AddSingleton<IDbConnection>(s => new SqliteConnection(connectionString));
+
+            services.AddSingleton<IRepository<Book>>(s => new BookRepository(s.GetRequiredService<IDbConnection>(), s.GetRequiredService<ILogger<BookRepository>>()));
             services.AddSingleton<IUserBookRepository>(s => new UserBookRepository(connectionString, s.GetRequiredService<ILogger<UserBookRepository>>()));
 
             services.AddSingleton<IUserBookService>(s => new UserBookService(s.GetRequiredService<IUserBookRepository>(), s.GetRequiredService<IRepository<Book>>()));

@@ -4,18 +4,19 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace DataAccess.Repositories
 {
     public class BookRepository : IRepository<Book>
     {
-        private readonly string _connectionString;
         private readonly ILogger<BookRepository> _logger;
+        private readonly IDbConnection _connection;
 
-        public BookRepository(string connectionString, ILogger<BookRepository> logger)
+        public BookRepository(IDbConnection connection, ILogger<BookRepository> logger)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -24,11 +25,12 @@ namespace DataAccess.Repositories
             Book book = null;
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"INSERT INTO books (
+                    using (var com = db.CreateCommand())
+                    {
+                        com.CommandText = @"INSERT INTO books (
                             book_title, 
                             book_author, 
                             book_isbn, 
@@ -59,8 +61,8 @@ namespace DataAccess.Repositories
                             book_createdBy,
                             NULL
                         FROM books 
-                        WHERE book_id = (SELECT MAX(book_id) FROM books);", db))
-                    {
+                        WHERE book_id = (SELECT MAX(book_id) FROM books);";
+
                         com.Parameters.Add(new SqliteParameter("title", newModel.Title));
                         com.Parameters.Add(new SqliteParameter("author", newModel.Author));
                         com.Parameters.Add(new SqliteParameter("isbn", newModel.ISBN));
@@ -70,9 +72,9 @@ namespace DataAccess.Repositories
                         com.Parameters.Add(new SqliteParameter("updated", DateTime.UtcNow));
                         com.Parameters.Add(new SqliteParameter("createdBy", newModel.CreatedBy));
 
-                        using (var reader = await com.ExecuteReaderAsync())
+                        using (var reader = com.ExecuteReader())
                         {
-                            await reader.ReadAsync();
+                            reader.Read();
                             book = ReadBook(reader);
                         }
                     }
@@ -91,21 +93,22 @@ namespace DataAccess.Repositories
             bool deleted = false;
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"
-                        DELETE
-                        FROM userbooks
-                        WHERE book_id = @id;
-                        DELETE 
-                        FROM books
-                        WHERE book_id = @id", db))
+                    using (var com = db.CreateCommand())
                     {
+                        com.CommandText = @"
+                            DELETE
+                            FROM userbooks
+                            WHERE book_id = @id;
+                            DELETE 
+                            FROM books
+                            WHERE book_id = @id";
+
                         com.Parameters.Add(new SqliteParameter("id", id));
 
-                        deleted = await com.ExecuteNonQueryAsync() > 0;
+                        deleted = com.ExecuteNonQuery() > 0;
                     }
                     db.Close();
                 }
@@ -123,11 +126,12 @@ namespace DataAccess.Repositories
             Book book = null;
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"SELECT 
+                    using (var com = db.CreateCommand())
+                    {
+                        com.CommandText = @"SELECT 
                             b.book_id, 
                             b.book_title, 
                             b.book_author, 
@@ -143,14 +147,13 @@ namespace DataAccess.Repositories
                             ON ub.book_id = b.book_id
                         LEFT JOIN users AS u
                             ON u.user_id = ub.user_id
-                        WHERE b.book_id = @id", db))
-                    {
+                        WHERE b.book_id = @id";
+
                         com.Parameters.Add(new SqliteParameter("id", id));
 
-                        using (var reader = await com.ExecuteReaderAsync())
+                        using (var reader = com.ExecuteReader())
                         {
-                            await reader.ReadAsync();
-                            if (reader.HasRows)
+                            if (reader.Read())
                             {
                                 book = ReadBook(reader);
                             }
@@ -172,11 +175,12 @@ namespace DataAccess.Repositories
             List<Book> books = new List<Book>();
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"SELECT 
+                    using (var com = db.CreateCommand())
+                    {
+                        com.CommandText = @"SELECT 
                             b.book_id, 
                             b.book_title, 
                             b.book_author, 
@@ -191,16 +195,13 @@ namespace DataAccess.Repositories
                         LEFT JOIN userbooks AS ub
                             ON ub.book_id = b.book_id
                         LEFT JOIN users AS u
-                            ON u.user_id = ub.user_id", db))
-                    {
-                        using (var reader = await com.ExecuteReaderAsync())
+                            ON u.user_id = ub.user_id";
+
+                        using (var reader = com.ExecuteReader())
                         {
-                            while (await reader.ReadAsync())
+                            while (reader.Read())
                             {
-                                if (reader.HasRows)
-                                {
-                                    books.Add(ReadBook(reader));
-                                }
+                                books.Add(ReadBook(reader));
                             }
                         }
                     }
@@ -220,11 +221,12 @@ namespace DataAccess.Repositories
             Book book = null;
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
-                    using (var com = new SqliteCommand(
-                        @"UPDATE books 
+                    using (var com = db.CreateCommand())
+                    {
+                        com.CommandText = @"UPDATE books 
                             SET
                                 book_title = @title, 
                                 book_author = @author, 
@@ -249,8 +251,8 @@ namespace DataAccess.Repositories
                             ON ub.book_id = b.book_id
                         LEFT JOIN users AS u
                             ON u.user_id = ub.user_id
-                        WHERE b.book_id = @id;", db))
-                    {
+                        WHERE b.book_id = @id;";
+
                         com.Parameters.Add(new SqliteParameter("id", id));
                         com.Parameters.Add(new SqliteParameter("title", newModel.Title));
                         com.Parameters.Add(new SqliteParameter("author", newModel.Author));
@@ -259,10 +261,12 @@ namespace DataAccess.Repositories
                         com.Parameters.Add(new SqliteParameter("checkedOut", newModel.CheckedOut));
                         com.Parameters.Add(new SqliteParameter("updated", DateTime.UtcNow));
 
-                        using (var reader = await com.ExecuteReaderAsync())
+                        using (var reader = com.ExecuteReader())
                         {
-                            await reader.ReadAsync();
-                            book = ReadBook(reader);
+                            if (reader.Read())
+                            {
+                                book = ReadBook(reader);
+                            }
                         }
                     }
                     db.Close();
@@ -275,7 +279,7 @@ namespace DataAccess.Repositories
             return book;
         }
 
-        private static Book ReadBook(SqliteDataReader reader)
+        private static Book ReadBook(IDataReader reader)
         {
             return new Book(
                 id: reader.GetInt32(0),

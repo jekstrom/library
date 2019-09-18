@@ -26,3 +26,4 @@
 * State changes
 * Generate nav based on current user's authorization
 * Unit tests
+* Containerize
