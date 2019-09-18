@@ -100,10 +100,9 @@ namespace library
                 });
 
             services.AddLogging(configure => configure.AddDebug());
+            services.AddTransient<IDbConnection>(s => new SqliteConnection(connectionString));
 
-            services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(connectionString, userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
-
-            services.AddSingleton<IDbConnection>(s => new SqliteConnection(connectionString));
+            services.AddSingleton<IRepository<LibraryUser>>(s => new UserRepository(s.GetRequiredService<IDbConnection>(), userRoleMap.ToDictionary(kp => kp.Username, kp => kp.Roles.ToList() as IList<string>), s.GetRequiredService<ILogger<UserRepository>>()));
 
             services.AddSingleton<IRepository<Book>>(s => new BookRepository(s.GetRequiredService<IDbConnection>(), s.GetRequiredService<ILogger<BookRepository>>()));
             services.AddSingleton<IUserBookRepository>(s => new UserBookRepository(connectionString, s.GetRequiredService<ILogger<UserBookRepository>>()));

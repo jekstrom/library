@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using CsvHelper;
 using Domain.Models;
 using Domain.Repositories;
 using Domain.Services;
@@ -38,6 +40,29 @@ namespace library.Controllers
             }
             HttpContext.Response.StatusCode = 403;
             return Json(null);
+        }
+
+        [HttpGet("api/[controller]/[action]")]
+        public async Task<string> Csv()
+        {
+            if (UserIsAuthorized("bookreader"))
+            {
+                IReadOnlyCollection<Book> books = await _repository.Get();
+                if (books.Any())
+                {
+                    using (var stringWriter = new StringWriter())
+                    using (CsvWriter writer = new CsvWriter(stringWriter))
+                    {
+                        writer.WriteRecords(books);
+                        stringWriter.Flush();
+                        return stringWriter.ToString();
+                    }
+                }
+                HttpContext.Response.StatusCode = 404;
+                return String.Empty;
+            }
+            HttpContext.Response.StatusCode = 403;
+            return String.Empty;
         }
 
         [HttpGet("api/[controller]/{id}")]

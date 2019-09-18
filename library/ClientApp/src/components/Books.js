@@ -1,8 +1,12 @@
 import React, { Component } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Button } from 'react-bootstrap';
+import { Button, Col, Grid, Row } from 'react-bootstrap';
 import { BookModal } from "./BookModal"
 import { EditBookModal } from './EditBookModal';
+
+var GridStyle = {
+  marginLeft: '0px'
+}
 
 export class Books extends Component {
   displayName = Books.name;
@@ -154,9 +158,16 @@ export class Books extends Component {
 
         {contents}
 
-        <div>
-          <BookModal buttonText="Add new book" onNewBook={this.addNewBook}/>
-        </div>
+        <Grid style={GridStyle}>
+          <Row>
+            <Col md={2}>
+              <BookModal buttonText="Add new book" onNewBook={this.addNewBook}/>
+            </Col>
+            <Col md={2}>
+              <Button onClick={() => window.location.href="/api/book/csv"}>Download CSV</Button>
+            </Col>
+          </Row>
+        </Grid>
       </div>
     );
   }
