@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,13 +13,13 @@ namespace DataAccess.Repositories
 {
     public class UserRepository : IRepository<LibraryUser>
     {
-        private readonly string _connectionString;
+        private readonly IDbConnection _connection;
         private readonly IDictionary<string, IList<string>> _userRoleMap;
         private readonly ILogger<UserRepository> _logger;
 
-        public UserRepository(string connectionString, IDictionary<string, IList<string>> userRoleMap, ILogger<UserRepository> logger)
+        public UserRepository(IDbConnection connection, IDictionary<string, IList<string>> userRoleMap, ILogger<UserRepository> logger)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _userRoleMap = userRoleMap ?? throw new ArgumentNullException(nameof(userRoleMap));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -39,13 +40,14 @@ namespace DataAccess.Repositories
 
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
                     foreach (string roleName in roles)
                     {
-                        using (var com = new SqliteCommand(
-                            @"INSERT INTO users (
+                        using (var com = _connection.CreateCommand())
+                        {
+                            com.CommandText = @"INSERT INTO users (
                                 user_name, 
                                 user_username
                             ) 
@@ -81,15 +83,15 @@ namespace DataAccess.Repositories
                                 ON ur.user_id = u.user_id
                             INNER JOIN roles AS r
                                 ON r.role_id = ur.role_id
-                            WHERE u.user_id = (SELECT MAX(u2.user_id) FROM users AS u2);", db))
-                        {
+                            WHERE u.user_id = (SELECT MAX(u2.user_id) FROM users AS u2);";
+
                             com.Parameters.Add(new SqliteParameter("name", newModel.Name ?? "Anonymous"));
                             com.Parameters.Add(new SqliteParameter("username", newModel.Username));
                             com.Parameters.Add(new SqliteParameter("roleName", roleName));
 
-                            using (var reader = await com.ExecuteReaderAsync())
+                            using (var reader = com.ExecuteReader())
                             {
-                                user = await ReadUser(reader);
+                                user = ReadUser(reader);
                             }
                         }
                     }
@@ -129,13 +131,14 @@ namespace DataAccess.Repositories
 
             try
             {
-                using (var db = new SqliteConnection(_connectionString))
+                using (var db = _connection)
                 {
                     db.Open();
                     foreach (string roleName in roles)
                     {
-                        using (var com = new SqliteCommand(
-                            @"
+                        using (var com = _connection.CreateCommand())
+                        {
+                            com.CommandText = @"
                             SELECT 
                                 u.user_id,
                                 u.user_name, 
@@ -155,15 +158,15 @@ namespace DataAccess.Repositories
                                 ON ub.user_id = u.user_id   
                             LEFT JOIN books AS b
                                 ON b.book_id = ub.book_id
-                            WHERE u.user_username = @username;", db))
-                        {
+                            WHERE u.user_username = @username;";
+
                             com.Parameters.Add(new SqliteParameter("username", id));
 
-                            using (var reader = await com.ExecuteReaderAsync())
+                            using (var reader = com.ExecuteReader())
                             {
-                                if (reader.HasRows)
+                                if (reader.Read())
                                 {
-                                    user = await ReadUser(reader);
+                                    user = ReadUser(reader);
                                 }
                             }
                         }
@@ -188,10 +191,10 @@ namespace DataAccess.Repositories
             throw new NotImplementedException();
         }
 
-        private static async Task<LibraryUser> ReadUser(SqliteDataReader reader)
+        private static LibraryUser ReadUser(IDataReader reader)
         {
             LibraryUser user = null;
-            while (await reader.ReadAsync())
+            while (reader.Read())
             {
                 int userId = reader.GetInt32(0);
                 string name = reader.GetString(1);
