@@ -164,10 +164,7 @@ namespace DataAccess.Repositories
 
                             using (var reader = com.ExecuteReader())
                             {
-                                if (reader.Read())
-                                {
-                                    user = ReadUser(reader);
-                                }
+                                user = ReadUser(reader);
                             }
                         }
                     }
@@ -214,11 +211,13 @@ namespace DataAccess.Repositories
 
                 if (user is object)
                 {
-                    user = new LibraryUser(userId, name, username, user.Roles.Concat(new[] { role }).ToList(), user.BooksCheckedOut.Concat(new[] { book }).ToList());
+                    var books = user.BooksCheckedOut.Concat(new[] { book }).Where(b => b != null).ToList();
+                    user = new LibraryUser(userId, name, username, user.Roles.Concat(new[] { role }).ToList(), books);
                 }
                 else
                 {
-                    user = new LibraryUser(userId, name, username, new[] { role }, new[] { book });
+                    var books = book != null ? new[] { book } : new Book[] { };
+                    user = new LibraryUser(userId, name, username, new[] { role }, books);
                 }
             }
             return user;

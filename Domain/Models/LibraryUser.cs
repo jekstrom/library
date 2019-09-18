@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Domain.Models
 {
@@ -23,6 +24,17 @@ namespace Domain.Models
             Name = name;
             Username = username;
             BooksCheckedOut = booksCheckedOut;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as LibraryUser;
+            return other != null
+                && (other.BooksCheckedOut == null && BooksCheckedOut == null || other.BooksCheckedOut.SequenceEqual(BooksCheckedOut))
+                && other.Id == Id
+                && other.Name == Name
+                && (other.Roles == null && Roles == null || other.Roles.SequenceEqual(Roles))
+                && other.Username == Username;
         }
     }
 }
