@@ -1,13 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace library
 {
@@ -20,7 +13,13 @@ namespace library
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseKestrel(options => options.Listen(IPAddress.Any, 8081))
+                .UseKestrel(options => {
+                    options.Listen(IPAddress.Any, 8081);
+                    options.Listen(IPAddress.Loopback, 8443, listenOptions =>
+                    {
+                        listenOptions.UseHttps("cert.pfx", "password");
+                    });
+                })
                 .UseStartup<Startup>();
     }
 }
